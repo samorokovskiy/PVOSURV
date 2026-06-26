@@ -216,6 +216,42 @@
             border-radius: 8px;
         }
 
+        /* Сообщение "нет активных анкет" */
+        .no-quests {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .no-quests i {
+            font-size: 56px;
+            display: block;
+            margin-bottom: 20px;
+            color: var(--accent-color, #3498db);
+            opacity: 0.5;
+        }
+
+        .no-quests .no-quests-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .no-quests .no-quests-subtitle {
+            font-size: 15px;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+
+        .no-quests .no-quests-username {
+            color: var(--accent-color, #3498db);
+            font-weight: 600;
+        }
+
         /* Загрузка */
         .loading-spinner {
             display: flex;
@@ -234,24 +270,6 @@
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
-        }
-
-        /* Сообщение "нет анкет" */
-        .no-quests {
-            text-align: center;
-            padding: 60px 20px;
-            color: #7f8c8d;
-        }
-
-        .no-quests i {
-            font-size: 48px;
-            display: block;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .no-quests p {
-            font-size: 16px;
         }
 
         /* Адаптивность */
@@ -281,6 +299,22 @@
             .quest-card-title h2 {
                 font-size: 16px;
             }
+
+            .no-quests {
+                padding: 40px 16px;
+            }
+
+            .no-quests i {
+                font-size: 40px;
+            }
+
+            .no-quests .no-quests-title {
+                font-size: 17px;
+            }
+
+            .no-quests .no-quests-subtitle {
+                font-size: 14px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -300,14 +334,16 @@
 
         /* Темная тема */
         [data-theme="dark"] .quests-header,
-        [data-theme="dark"] .quest-card {
+        [data-theme="dark"] .quest-card,
+        [data-theme="dark"] .no-quests {
             background: rgba(26, 26, 46, 0.95);
             border-color: rgba(255, 255, 255, 0.1);
         }
 
         [data-theme="dark"] .quests-header h1,
         [data-theme="dark"] .quest-card-title h2,
-        [data-theme="dark"] .quest-card-title .quest-theme {
+        [data-theme="dark"] .quest-card-title .quest-theme,
+        [data-theme="dark"] .no-quests .no-quests-title {
             color: #ecf0f1;
         }
 
@@ -325,6 +361,10 @@
 
         [data-theme="dark"] .quest-questions-panel .placeholder {
             background: #1a1a2e;
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .no-quests .no-quests-subtitle {
             color: #95a5a6;
         }
     </style>
@@ -361,7 +401,8 @@
 
             const state = {
                 quests: [],
-                openPanels: new Set() // Хранит NRN раскрытых анкет
+                openPanels: new Set(),
+                username: 'Пользователь'  // ← Добавлено
             };
 
             // DOM-ссылки
@@ -379,7 +420,8 @@
                     const resp = await fetch('/api/userinfo');
                     if (resp.ok) {
                         const data = await resp.json();
-                        usernameDisplay.textContent = data.username || 'Пользователь';
+                        state.username = data.username || 'Пользователь';
+                        usernameDisplay.textContent = state.username;
                     }
                 } catch (err) {
                     console.error('Ошибка загрузки пользователя:', err);
@@ -414,14 +456,21 @@
             function renderQuests() {
                 const grid = questsGrid;
 
+                // Если нет анкет - показываем персонализированное сообщение
                 if (state.quests.length === 0) {
+                    const username = state.username || 'Пользователь';
                     grid.innerHTML = `
                         <div class="no-quests">
-                            <i class="fas fa-clipboard"></i>
-                            <p>Нет доступных анкет для прохождения</p>
-                            <p style="font-size:14px; margin-top:8px; color:#95a5a6;">
-                                В данный момент нет активных анкет
-                            </p>
+                            <i class="fas fa-clipboard-list"></i>
+                            <div class="no-quests-title">Нет активных анкет</div>
+                            <div class="no-quests-subtitle">
+                                Для пользователя <span class="no-quests-username">${escapeHtml(username)}</span> 
+                                в данный момент нет активных анкет.
+                            </div>
+                            <div style="margin-top:12px; font-size:13px; color:#95a5a6;">
+                                <i class="fas fa-info-circle"></i>
+                                Обратитесь к администратору, если это ошибка
+                            </div>
                         </div>
                     `;
                     questsCount.textContent = '0';
@@ -437,7 +486,6 @@
                     const btnIcon = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';
                     const btnClass = isOpen ? 'btn-toggle active' : 'btn-toggle';
 
-                    // Форматирование дат
                     const regDate = quest.DREG_DATE ? formatDate(quest.DREG_DATE) : '—';
                     const beginDate = quest.DBEGIN_DATE ? formatDate(quest.DBEGIN_DATE) : '—';
                     const endDate = quest.DEND_DATE ? formatDate(quest.DEND_DATE) : '—';
@@ -472,7 +520,6 @@
                                     <br><br>
                                     <small style="color:#95a5a6;">Содержимое будет разработано позднее</small>
                                 </div>
-                                <!-- Здесь будут вопросы -->
                             </div>
                         </div>
                     `;
