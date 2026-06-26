@@ -16,7 +16,7 @@ module.exports = function(app) {
 
     app.get('/', (req, res) => {
         if (req.session.user) {
-            return res.redirect('/ank');
+            return res.redirect('/quests');
         }
         res.sendFile(path.join(__dirname, '../views', 'login.html'));
     });
@@ -69,7 +69,7 @@ module.exports = function(app) {
             connectionManager.set(req.sessionID, connection);
 
             console.log(`✅ Пользователь ${username} вошел. Сессия: ${req.sessionID}`);
-            res.redirect('/ank');
+            res.redirect('/quests');
 
         } catch (err) {
             let errorMessage = 'Ошибка аутентификации. Проверьте логин и пароль.';

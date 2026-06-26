@@ -38,9 +38,6 @@ module.exports = function(app) {
                     DEND_DATE,
                     SAGNLIST
                  FROM ${SCHEMA}.V_UD_QUESTS
-                 WHERE nACTIVE = 1
-                   AND (DBEGIN_DATE IS NULL OR DBEGIN_DATE <= SYSDATE)
-                   AND (DEND_DATE IS NULL OR DEND_DATE >= SYSDATE)
                  ORDER BY DREG_DATE DESC, SNUMB`,
                 [],
                 { outFormat: oracledb.OUT_FORMAT_OBJECT }
