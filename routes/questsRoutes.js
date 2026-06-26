@@ -26,6 +26,10 @@ module.exports = function(app) {
         try {
             const connection = await getConnectionForSession(req, connectionManager);
 
+            // Представление V_UD_QUESTS уже фильтрует данные:
+            // - только активные анкеты (nACTIVE = 1)
+            // - только для текущего пользователя (через контекст сессии)
+            // - только в период действия (DBEGIN_DATE <= SYSDATE <= DEND_DATE)
             const result = await connection.execute(
                 `SELECT 
                     NRN,
