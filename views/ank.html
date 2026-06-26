@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Анкетирование - Парус 8</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ============================================
+           Стили для страницы анкетирования
+           ============================================ */
+
+        .ank-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            margin: 0 auto;
+        }
+
+        /* Шапка */
+        .ank-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px 30px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .ank-header h1 {
+            font-size: 22px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ank-header h1 i {
+            color: var(--accent-color, #3498db);
+        }
+
+        .ank-user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .ank-user-info span {
+            color: #34495e;
+            font-weight: 500;
+        }
+
+        .ank-user-info .badge {
+            background: var(--accent-color, #3498db);
+            color: white;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Основной контент */
+        .ank-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        /* Список вопросов (слева) */
+        .ank-questions-list {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 140px);
+            overflow-y: auto;
+        }
+
+        .ank-questions-list h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7f8c8d;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .question-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .question-nav-item:hover {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .question-nav-item.active {
+            border-color: var(--accent-color, #3498db);
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        .question-nav-item .q-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .question-nav-item .q-number.unanswered {
+            background: #ecf0f1;
+            color: #7f8c8d;
+        }
+
+        .question-nav-item .q-number.answered {
+            background: var(--accent-color, #3498db);
+            color: white;
+        }
+
+        .question-nav-item .q-number.current {
+            background: var(--accent-dark, #2980b9);
+            color: white;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+        }
+
+        .question-nav-item .q-text {
+            font-size: 14px;
+            color: #2c3e50;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .question-nav-item .q-status {
+            font-size: 12px;
+            color: #7f8c8d;
+            flex-shrink: 0;
+        }
+
+        .question-nav-item .q-status.answered {
+            color: #27ae60;
+        }
+
+        /* Карточка вопроса (справа) */
+        .ank-question-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            min-height: 400px;
+        }
+
+        .ank-question-card .q-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .ank-question-card .q-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .ank-question-card .q-type-badge {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            flex-shrink: 0;
+        }
+
+        .ank-question-card .q-type-badge.single {
+            background: #d6eaf8;
+            color: #2980b9;
+        }
+
+        .ank-question-card .q-type-badge.multiple {
+            background: #fdebd0;
+            color: #e67e22;
+        }
+
+        .ank-question-card .q-type-badge.free {
+            background: #e8daef;
+            color: #8e44ad;
+        }
+
+        .ank-question-card .q-description {
+            color: #7f8c8d;
+            font-size: 15px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        /* Варианты ответов */
+        .choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .choice-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+
+        .choice-item:hover {
+            border-color: #bdc3c7;
+            background: #f5f5f5;
+        }
+
+        .choice-item.selected {
+            border-color: var(--accent-color, #3498db);
+            background: rgba(52, 152, 219, 0.06);
+        }
+
+        .choice-item input[type="radio"],
+        .choice-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .choice-item label {
+            cursor: pointer;
+            font-size: 15px;
+            color: #2c3e50;
+            flex: 1;
+        }
+
+        /* Свободный ввод */
+        .free-text-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 16px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+            background: #fafafa;
+        }
+
+        .free-text-area:focus {
+            outline: none;
+            border-color: var(--accent-color, #3498db);
+            background: white;
+        }
+
+        /* Кнопки навигации */
+        .ank-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .ank-navigation .btn-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-nav {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-nav:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-nav:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-prev {
+            background: #ecf0f1;
+            color: #34495e;
+        }
+
+        .btn-prev:hover:not(:disabled) {
+            background: #dfe6e9;
+        }
+
+        .btn-next {
+            background: var(--accent-color, #3498db);
+            color: white;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-finish {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-finish:hover {
+            box-shadow: 0 4px 16px rgba(39, 174, 96, 0.3);
+        }
+
+        /* Индикатор прогресса */
+        .ank-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        .ank-progress .progress-bar {
+            width: 120px;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .ank-progress .progress-bar .progress-fill {
+            height: 100%;
+            background: var(--accent-color, #3498db);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .ank-progress .progress-text {
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        /* Загрузка */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+
+        .loading-spinner i {
+            margin-right: 12px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .ank-content {
+                grid-template-columns: 1fr;
+            }
+
+            .ank-questions-list {
+                position: static;
+                max-height: none;
+                order: 2;
+            }
+
+            .ank-question-card {
+                order: 1;
+            }
+
+            .ank-header {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+
+            .ank-navigation {
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .ank-navigation .btn-group {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .ank-progress {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ank-question-card {
+                padding: 18px;
+            }
+
+            .ank-question-card .q-title {
+                font-size: 17px;
+            }
+
+            .choice-item {
+                padding: 10px 12px;
+            }
+
+            .question-nav-item .q-text {
+                font-size: 13px;
+            }
+        }
+
+        /* Темная тема - адаптация */
+        [data-theme="dark"] .ank-header,
+        [data-theme="dark"] .ank-questions-list,
+        [data-theme="dark"] .ank-question-card {
+            background: rgba(26, 26, 46, 0.95);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .ank-header h1,
+        [data-theme="dark"] .ank-question-card .q-title,
+        [data-theme="dark"] .choice-item label,
+        [data-theme="dark"] .question-nav-item .q-text {
+            color: #ecf0f1;
+        }
+
+        [data-theme="dark"] .ank-user-info span {
+            color: #bdc3c7;
+        }
+
+        [data-theme="dark"] .choice-item {
+            background: #1a1a2e;
+            border-color: #2c3e50;
+        }
+
+        [data-theme="dark"] .choice-item:hover {
+            background: #2c3e50;
+            border-color: #34495e;
+        }
+
+        [data-theme="dark"] .free-text-area {
+            background: #1a1a2e;
+            border-color: #2c3e50;
+            color: #ecf0f1;
+        }
+
+        [data-theme="dark"] .free-text-area:focus {
+            background: #2c3e50;
+        }
+
+        [data-theme="dark"] .question-nav-item .q-number.unanswered {
+            background: #2c3e50;
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .ank-questions-list h3 {
+            border-bottom-color: #2c3e50;
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .ank-question-card .q-header {
+            border-bottom-color: #2c3e50;
+        }
+
+        [data-theme="dark"] .ank-navigation {
+            border-top-color: #2c3e50;
+        }
+
+        [data-theme="dark"] .btn-prev {
+            background: #2c3e50;
+            color: #ecf0f1;
+        }
+
+        [data-theme="dark"] .btn-prev:hover:not(:disabled) {
+            background: #34495e;
+        }
+
+        [data-theme="dark"] .ank-progress {
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .ank-progress .progress-bar {
+            background: #2c3e50;
+        }
+
+        [data-theme="dark"] .question-nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="dark"] .question-nav-item.active {
+            background: rgba(52, 152, 219, 0.15);
+        }
+
+        [data-theme="dark"] .q-type-badge {
+            background: #2c3e50;
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .q-type-badge.single {
+            background: #1a3a5a;
+            color: #5dade2;
+        }
+
+        [data-theme="dark"] .q-type-badge.multiple {
+            background: #5a3a1a;
+            color: #f0b27a;
+        }
+
+        [data-theme="dark"] .q-type-badge.free {
+            background: #3a1a5a;
+            color: #af7ac5;
+        }
+    </style>
+</head>
+<body>
+    <div class="ank-container">
+        <!-- ШАПКА -->
+        <header class="ank-header">
+            <h1><i class="fas fa-clipboard-list"></i> Анкетирование</h1>
+            <div class="ank-user-info">
+                <span><i class="fas fa-user"></i> <span id="ankUsername">Загрузка...</span></span>
+                <span class="badge" id="progressBadge">0%</span>
+                <button id="ankLogoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </header>
+
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
+        <div class="ank-content">
+            <!-- Список вопросов (слева) -->
+            <aside class="ank-questions-list" id="questionsList">
+                <h3><i class="fas fa-list"></i> Вопросы</h3>
+                <div id="questionNavItems">
+                    <!-- Заполняется JS -->
+                    <div class="loading-spinner" style="min-height:100px; font-size:14px;">
+                        <i class="fas fa-spinner"></i> Загрузка...
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Карточка вопроса (справа) -->
+            <main class="ank-question-card" id="questionCard">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner"></i> Загрузка вопросов...
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================
+            // 1. СОСТОЯНИЕ
+            // ============================================
+
+            const state = {
+                questions: [],          // Все вопросы с вариантами ответов
+                userAnswers: {},        // Ответы пользователя (NPRN -> { answerText, answerNrn })
+                currentIndex: 0,        // Индекс текущего вопроса
+                loading: false,
+                saving: false
+            };
+
+            // DOM-ссылки
+            const $ = (id) => document.getElementById(id);
+            const usernameDisplay = $('ankUsername');
+            const progressBadge = $('progressBadge');
+            const logoutBtn = $('ankLogoutBtn');
+            const questionsList = $('questionNavItems');
+            const questionCard = $('questionCard');
+
+            // ============================================
+            // 2. ЗАГРУЗКА ДАННЫХ
+            // ============================================
+
+            async function loadUserInfo() {
+                try {
+                    const resp = await fetch('/api/userinfo');
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        usernameDisplay.textContent = data.username || 'Пользователь';
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки пользователя:', err);
+                }
+            }
+
+            async function loadQuestions() {
+                try {
+                    const resp = await fetch('/api/quests');
+                    const data = await resp.json();
+                    if (data.success) {
+                        state.questions = data.data;
+                        return true;
+                    } else {
+                        console.error('Ошибка загрузки вопросов:', data.error);
+                        return false;
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки вопросов:', err);
+                    return false;
+                }
+            }
+
+            async function loadUserAnswers() {
+                try {
+                    const resp = await fetch('/api/user-answers');
+                    const data = await resp.json();
+                    if (data.success) {
+                        state.userAnswers = data.data;
+                        return true;
+                    } else {
+                        console.error('Ошибка загрузки ответов:', data.error);
+                        return false;
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки ответов:', err);
+                    return false;
+                }
+            }
+
+            // ============================================
+            // 3. РЕНДЕРИНГ
+            // ============================================
+
+            function getAnswerForQuestion(questionNrn) {
+                return state.userAnswers[questionNrn] || null;
+            }
+
+            function isQuestionAnswered(questionNrn) {
+                return !!state.userAnswers[questionNrn];
+            }
+
+            function getChoiceTypeLabel(type) {
+                const map = {
+                    0: 'Свободный ввод',
+                    1: 'Одиночный выбор',
+                    2: 'Множественный выбор'
+                };
+                return map[type] || 'Неизвестно';
+            }
+
+            function getChoiceTypeClass(type) {
+                const map = {
+                    0: 'free',
+                    1: 'single',
+                    2: 'multiple'
+                };
+                return map[type] || '';
+            }
+
+            function renderQuestionNav() {
+                const container = questionsList;
+                if (state.questions.length === 0) {
+                    container.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">Нет вопросов</div>';
+                    return;
+                }
+
+                let html = '';
+                state.questions.forEach((q, index) => {
+                    const answered = isQuestionAnswered(q.nrn);
+                    const isCurrent = index === state.currentIndex;
+
+                    let statusText = answered ? '✅' : '⬜';
+                    let statusClass = answered ? 'answered' : 'unanswered';
+                    let numClass = answered ? 'answered' : 'unanswered';
+                    if (isCurrent) numClass = 'current';
+
+                    html += `
+                        <div class="question-nav-item ${isCurrent ? 'active' : ''}" 
+                             data-index="${index}" 
+                             data-nrn="${q.nrn}"
+                             onclick="window._ankGoToQuestion(${index})">
+                            <span class="q-number ${numClass}">${index + 1}</span>
+                            <span class="q-text">${escapeHtml(q.name || 'Без названия')}</span>
+                            <span class="q-status ${statusClass}">${statusText}</span>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+                updateProgress();
+            }
+
+            function renderQuestionCard() {
+                const card = questionCard;
+                const questions = state.questions;
+
+                if (questions.length === 0) {
+                    card.innerHTML = `
+                        <div style="text-align:center; padding:40px; color:#999;">
+                            <i class="fas fa-inbox" style="font-size:48px; display:block; margin-bottom:16px;"></i>
+                            <p>Нет доступных вопросов</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const q = questions[state.currentIndex];
+                if (!q) {
+                    card.innerHTML = '<p style="color:#999;">Вопрос не найден</p>';
+                    return;
+                }
+
+                const answered = isQuestionAnswered(q.nrn);
+                const answer = getAnswerForQuestion(q.nrn);
+                const typeLabel = getChoiceTypeLabel(q.choiceType);
+                const typeClass = getChoiceTypeClass(q.choiceType);
+
+                // Строим варианты ответов
+                let choicesHtml = '';
+                if (q.choiceType === 0) {
+                    // Свободный ввод
+                    const value = answer ? answer.answerText || '' : '';
+                    choicesHtml = `
+                        <textarea class="free-text-area" id="freeTextInput" 
+                                  placeholder="Введите ваш ответ..." 
+                                  data-nrn="${q.nrn}">${escapeHtml(value)}</textarea>
+                        <button class="btn-nav btn-next" id="saveFreeTextBtn" style="margin-top:12px; background: var(--accent-color, #3498db); color:white;">
+                            <i class="fas fa-save"></i> Сохранить ответ
+                        </button>
+                    `;
+                } else if (q.choiceType === 1 || q.choiceType === 2) {
+                    // Одиночный или множественный выбор
+                    const inputType = q.choiceType === 1 ? 'radio' : 'checkbox';
+                    const nameAttr = q.choiceType === 1 ? `q_${q.nrn}` : undefined;
+
+                    if (q.choices && q.choices.length > 0) {
+                        choicesHtml = `<div class="choices-container" data-nrn="${q.nrn}" data-type="${q.choiceType}">`;
+                        q.choices.forEach(choice => {
+                            const isChecked = answer && answer.answerNrn === choice.nrn;
+                            const isSelected = isChecked ? 'selected' : '';
+                            choicesHtml += `
+                                <div class="choice-item ${isSelected}" onclick="window._ankSelectChoice(this, '${inputType}')">
+                                    <input type="${inputType}" name="${nameAttr || ''}" value="${choice.nrn}" 
+                                           ${isChecked ? 'checked' : ''} 
+                                           data-nrn="${q.nrn}" data-choice-nrn="${choice.nrn}">
+                                    <label>${escapeHtml(choice.name || choice.descr || 'Вариант')}</label>
+                                </div>
+                            `;
+                        });
+                        choicesHtml += `</div>`;
+                    } else {
+                        choicesHtml = `<p style="color:#999;">Нет вариантов ответов</p>`;
+                    }
+                } else {
+                    choicesHtml = `<p style="color:#999;">Неизвестный тип вопроса</p>`;
+                }
+
+                // Общее количество ответов
+                const totalAnswered = state.questions.filter(q2 => isQuestionAnswered(q2.nrn)).length;
+                const total = state.questions.length;
+
+                card.innerHTML = `
+                    <div class="q-header">
+                        <div>
+                            <span style="font-size:13px; color:#7f8c8d;">Вопрос ${state.currentIndex + 1} из ${total}</span>
+                            <div class="q-title">${escapeHtml(q.name || 'Без названия')}</div>
+                        </div>
+                        <span class="q-type-badge ${typeClass}">${typeLabel}</span>
+                    </div>
+                    ${q.descr ? `<div class="q-description">${escapeHtml(q.descr)}</div>` : ''}
+                    <div id="answerContainer">
+                        ${choicesHtml}
+                    </div>
+                    <div style="margin-top:12px; font-size:13px; color:#7f8c8d; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                        <span>${answered ? '✅ Ответ сохранен' : '⬜ Нет ответа'}</span>
+                        <span style="opacity:0.5;">|</span>
+                        <span>${totalAnswered} / ${total} вопросов отвечено</span>
+                    </div>
+                    <div class="ank-navigation">
+                        <div class="btn-group">
+                            <button class="btn-nav btn-prev" id="prevBtn" ${state.currentIndex === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-arrow-left"></i> Назад
+                            </button>
+                            <button class="btn-nav btn-next" id="nextBtn" ${state.currentIndex === total - 1 ? 'disabled' : ''}>
+                                Вперед <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-nav btn-finish" id="finishBtn">
+                                <i class="fas fa-check-circle"></i> Завершить
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Привязываем обработчики
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const finishBtn = document.getElementById('finishBtn');
+
+                if (prevBtn) prevBtn.addEventListener('click', () => goToQuestion(state.currentIndex - 1));
+                if (nextBtn) nextBtn.addEventListener('click', () => goToQuestion(state.currentIndex + 1));
+                if (finishBtn) finishBtn.addEventListener('click', () => {
+                    window.location.href = '/result';
+                });
+
+                // Свободный ввод: автосохранение через кнопку
+                const freeTextInput = document.getElementById('freeTextInput');
+                const saveFreeBtn = document.getElementById('saveFreeTextBtn');
+                if (freeTextInput && saveFreeBtn) {
+                    saveFreeBtn.addEventListener('click', () => {
+                        const text = freeTextInput.value.trim();
+                        if (text) {
+                            saveAnswer(q.nrn, null, text);
+                        } else {
+                            alert('Введите текст ответа');
+                        }
+                    });
+                    // Сохранение по Ctrl+Enter
+                    freeTextInput.addEventListener('keydown', (e) => {
+                        if (e.ctrlKey && e.key === 'Enter') {
+                            saveFreeBtn.click();
+                        }
+                    });
+                }
+
+                // Для выбора: автосохранение при изменении
+                const choiceInputs = card.querySelectorAll('.choice-item input[type="radio"], .choice-item input[type="checkbox"]');
+                choiceInputs.forEach(input => {
+                    input.addEventListener('change', function() {
+                        const qNrn = parseInt(this.dataset.nrn);
+                        const choiceNrn = parseInt(this.dataset.choiceNrn);
+                        const type = parseInt(this.closest('.choices-container').dataset.type);
+
+                        if (type === 1) {
+                            // Радио - одиночный выбор
+                            if (this.checked) {
+                                saveAnswer(qNrn, choiceNrn, null);
+                            }
+                        } else if (type === 2) {
+                            // Чекбоксы - множественный выбор
+                            // Для множественного выбора нужно сохранить все выбранные
+                            const container = this.closest('.choices-container');
+                            const checked = container.querySelectorAll('input:checked');
+                            // Для упрощения: сохраняем последний выбранный/снятый
+                            // В реальности нужно сохранять массив выбранных
+                            // Пока сохраняем выбранный, но для множественного нужно доработать
+                            saveAnswer(qNrn, choiceNrn, null);
+                        }
+                    });
+                });
+
+                // Обновляем прогресс и навигацию
+                updateProgress();
+                renderQuestionNav();
+            }
+
+            // ============================================
+            // 4. НАВИГАЦИЯ
+            // ============================================
+
+            window._ankGoToQuestion = function(index) {
+                goToQuestion(index);
+            };
+
+            function goToQuestion(index) {
+                if (index < 0 || index >= state.questions.length) return;
+                state.currentIndex = index;
+                renderQuestionCard();
+                // Прокрутка к карточке на мобильных
+                if (window.innerWidth <= 768) {
+                    questionCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
+            // ============================================
+            // 5. СОХРАНЕНИЕ ОТВЕТА (ВЫЗОВ ПРОЦЕДУРЫ)
+            // ============================================
+
+            async function saveAnswer(questionNrn, choiceNrn, answerText) {
+                if (state.saving) return;
+                state.saving = true;
+
+                try {
+                    const resp = await fetch('/api/save-answer', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            questionNrn: questionNrn,
+                            choiceNrn: choiceNrn,
+                            answerText: answerText || ''
+                        })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        // Обновляем локальное состояние
+                        state.userAnswers[questionNrn] = {
+                            answerText: answerText || '',
+                            answerNrn: choiceNrn || null
+                        };
+
+                        // Перерисовываем
+                        renderQuestionCard();
+                        renderQuestionNav();
+                        updateProgress();
+
+                        // Показываем индикатор сохранения
+                        showSaveIndicator(questionNrn, true);
+                    } else {
+                        console.error('Ошибка сохранения:', data.error);
+                        alert('Ошибка сохранения ответа: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                } catch (err) {
+                    console.error('Ошибка при сохранении:', err);
+                    alert('Ошибка соединения при сохранении ответа');
+                } finally {
+                    state.saving = false;
+                }
+            }
+
+            function showSaveIndicator(questionNrn, success) {
+                // Простая обратная связь
+                const card = questionCard;
+                const indicator = document.createElement('div');
+                indicator.style.cssText = `
+                    position: fixed; bottom: 20px; right: 20px;
+                    padding: 12px 24px; border-radius: 8px;
+                    background: ${success ? '#27ae60' : '#e74c3c'};
+                    color: white; font-weight: 600;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    transition: opacity 0.3s ease;
+                `;
+                indicator.textContent = success ? '✅ Ответ сохранен' : '❌ Ошибка сохранения';
+                document.body.appendChild(indicator);
+
+                setTimeout(() => {
+                    indicator.style.opacity = '0';
+                    setTimeout(() => indicator.remove(), 300);
+                }, 2000);
+            }
+
+            // ============================================
+            // 6. ВЫБОР ВАРИАНТА (обработчик клика на блок)
+            // ============================================
+
+            window._ankSelectChoice = function(element, inputType) {
+                const input = element.querySelector('input');
+                if (!input) return;
+
+                if (inputType === 'radio') {
+                    // Снимаем выделение со всех в группе
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        document.querySelectorAll(`input[name="${name}"]`).forEach(el => {
+                            el.closest('.choice-item').classList.remove('selected');
+                        });
+                    }
+                    input.checked = true;
+                    element.classList.add('selected');
+                    // Триггерим событие change для автосохранения
+                    input.dispatchEvent(new Event('change'));
+                } else if (inputType === 'checkbox') {
+                    // Переключаем чекбокс
+                    input.checked = !input.checked;
+                    element.classList.toggle('selected', input.checked);
+                    input.dispatchEvent(new Event('change'));
+                }
+            };
+
+            // ============================================
+            // 7. ПРОГРЕСС
+            // ============================================
+
+            function updateProgress() {
+                const total = state.questions.length || 1;
+                const answered = state.questions.filter(q => isQuestionAnswered(q.nrn)).length;
+                const percent = Math.round((answered / total) * 100);
+
+                if (progressBadge) {
+                    progressBadge.textContent = `${percent}%`;
+                }
+
+                // Обновляем прогресс-бар в навигации
+                const progressBar = document.querySelector('.progress-fill');
+                if (progressBar) {
+                    progressBar.style.width = `${percent}%`;
+                }
+
+                const progressText = document.querySelector('.progress-text');
+                if (progressText) {
+                    progressText.textContent = `${answered}/${total}`;
+                }
+            }
+
+            // ============================================
+            // 8. ВЫХОД
+            // ============================================
+
+            logoutBtn.addEventListener('click', async () => {
+                if (!confirm('Вы уверены, что хотите выйти?')) return;
+
+                try {
+                    const resp = await fetch('/logout', { method: 'POST' });
+                    const data = await resp.json();
+                    if (data.success) {
+                        window.location.href = data.redirect || '/';
+                    }
+                } catch (err) {
+                    console.error('Ошибка выхода:', err);
+                    window.location.href = '/';
+                }
+            });
+
+            // ============================================
+            // 9. ИНИЦИАЛИЗАЦИЯ
+            // ============================================
+
+            async function init() {
+                try {
+                    // Загружаем данные
+                    await loadUserInfo();
+                    const ok = await loadQuestions();
+                    if (!ok) {
+                        questionCard.innerHTML = `
+                            <div style="text-align:center; padding:40px; color:#e74c3c;">
+                                <i class="fas fa-exclamation-triangle" style="font-size:48px; display:block; margin-bottom:16px;"></i>
+                                <p>Ошибка загрузки вопросов. Проверьте подключение к БД.</p>
+                                <button onclick="location.reload()" style="margin-top:12px; padding:8px 20px; border-radius:6px; border:none; background:var(--accent-color, #3498db); color:white; cursor:pointer;">
+                                    <i class="fas fa-sync"></i> Обновить
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (state.questions.length === 0) {
+                        questionCard.innerHTML = `
+                            <div style="text-align:center; padding:40px; color:#999;">
+                                <i class="fas fa-clipboard" style="font-size:48px; display:block; margin-bottom:16px;"></i>
+                                <p>Нет доступных вопросов для анкетирования</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    await loadUserAnswers();
+                    renderQuestionNav();
+                    renderQuestionCard();
+
+                } catch (err) {
+                    console.error('Ошибка инициализации:', err);
+                    questionCard.innerHTML = `
+                        <div style="text-align:center; padding:40px; color:#e74c3c;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:48px; display:block; margin-bottom:16px;"></i>
+                            <p>Ошибка инициализации: ${escapeHtml(err.message)}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Хелпер для экранирования
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // Запуск
+            document.addEventListener('DOMContentLoaded', init);
+
+        })();
+    </script>
+</body>
+</html>

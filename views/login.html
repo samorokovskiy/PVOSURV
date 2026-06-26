@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Вход в систему</title>
+    
+    <!-- Подключаем Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    
+    <!-- Подключаем CSS с поддержкой тем -->
+    <link rel="stylesheet" href="/styles.css" />
+    
+    <!-- Дополнительный CSS для переключателя тем -->
+    <style>
+        /* ============================================
+           Переключатель тем (Theme Switcher)
+           ============================================ */
+        .theme-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .theme-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            position: relative;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-btn.active {
+            border-color: #2c3e50;
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.3);
+            transform: scale(1.1);
+        }
+
+        .theme-btn .tooltip {
+            position: absolute;
+            bottom: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .theme-btn:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Цвета кнопок тем */
+        .theme-btn[data-theme="blue"] {
+            background: linear-gradient(145deg, #2980b9, #3498db);
+        }
+
+        .theme-btn[data-theme="red"] {
+            background: linear-gradient(145deg, #c0392b, #e74c3c);
+        }
+
+        .theme-btn[data-theme="green"] {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+        }
+
+        .theme-btn[data-theme="dark"] {
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .theme-switcher {
+                top: 12px;
+                right: 12px;
+                padding: 6px 10px;
+            }
+
+            .theme-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 13px;
+            }
+
+            .theme-btn .tooltip {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .theme-switcher {
+                top: 8px;
+                right: 8px;
+                padding: 4px 8px;
+                gap: 4px;
+            }
+
+            .theme-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ===== ПЕРЕКЛЮЧАТЕЛЬ ТЕМ ===== -->
+    <div class="theme-switcher" id="themeSwitcher">
+        <button class="theme-btn" data-theme="blue" id="themeBlue" aria-label="Голубая тема">
+            <i class="fas fa-cloud"></i>
+            <span class="tooltip">Голубая</span>
+        </button>
+        <button class="theme-btn" data-theme="red" id="themeRed" aria-label="Красно-желтая тема">
+            <i class="fas fa-fire"></i>
+            <span class="tooltip">Красно-желтая</span>
+        </button>
+        <button class="theme-btn" data-theme="green" id="themeGreen" aria-label="Зеленая тема">
+            <i class="fas fa-leaf"></i>
+            <span class="tooltip">Зеленая</span>
+        </button>
+        <button class="theme-btn" data-theme="dark" id="themeDark" aria-label="Темная тема">
+            <i class="fas fa-moon"></i>
+            <span class="tooltip">Темная</span>
+        </button>
+    </div>
+
+    <!-- ===== ОСНОВНОЙ КОНТЕЙНЕР ===== -->
+    <div class="login-wrapper" id="loginWrapper">
+        <!-- Левый блок: информация о системе -->
+        <div class="login-info" id="loginInfo">
+            <div class="login-logo">
+                <i class="fas fa-university"></i>
+                <span>ГИС ВО «ЕФКС ВО»</span>
+            </div>
+            <h1>Управление государственной службы и кадров</h1>
+            <p class="subtitle">Правительство Воронежской области</p>
+            <div class="features">
+                <div class="feature-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Анкетирование</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-database"></i>
+                    <span>Тестирование</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-play"></i>
+                    <span>Результаты</span>
+                </div>
+            </div>
+            <div class="login-version">
+                <span>Версия 0.0.3</span>
+                <span>|</span>
+                <span>© 2026</span>
+            </div>
+        </div>
+
+        <!-- Правый блок: форма входа -->
+        <div class="login-form-container" id="loginFormContainer">
+            <div class="login-form-box">
+                <h2><i class="fas fa-sign-in-alt"></i> Анкеты и тесты</h2>
+                <p class="form-subtitle">Вход в систему</p>
+
+                <form id="loginForm" action="/login" method="POST">
+                    <div id="errorContainer"></div>
+
+                    <div class="form-group">
+                        <label for="username"><i class="fas fa-user"></i> Логин</label>
+                        <input type="text" id="username" name="username" 
+                               placeholder="например: user@domain.ru" 
+                               required autofocus />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password"><i class="fas fa-lock"></i> Пароль</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password" name="password" 
+                                   placeholder="Введите пароль" required />
+                            <button type="button" id="togglePassword" class="toggle-btn" aria-label="Показать пароль">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <i class="fas fa-arrow-right"></i> Войти
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <div class="info-message">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Используйте учетные данные Личного кабинета ГИС «ЕФКС ВО»</span>
+                    </div>
+                    <div class="help-link">
+                        <a href="#"><i class="fas fa-question-circle"></i> Помощь</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================
+            // 1. ПЕРЕКЛЮЧЕНИЕ ТЕМ
+            // ============================================
+
+            const themeSwitcher = document.getElementById('themeSwitcher');
+            const themeButtons = themeSwitcher.querySelectorAll('.theme-btn');
+            const loginWrapper = document.getElementById('loginWrapper');
+            const loginInfo = document.getElementById('loginInfo');
+            const loginFormContainer = document.getElementById('loginFormContainer');
+            const loginBtn = document.getElementById('loginBtn');
+            const errorContainer = document.getElementById('errorContainer');
+
+            // Определение темы по классам CSS
+            const themes = {
+                blue: {
+                    name: 'Голубая',
+                    bodyBg: 'linear-gradient(145deg, #e8f0fe 0%, #d4e4f7 50%, #b8d4f0 100%)',
+                    infoBg: 'linear-gradient(145deg, #2980b9, #3498db)',
+                    btnBg: 'linear-gradient(135deg, #3498db, #2980b9)',
+                    accent: '#3498db',
+                    accentDark: '#2980b9',
+                    shadow: 'rgba(52, 152, 219, 0.25)',
+                    iconColor: '#85c1e9',
+                    errorBg: '#ebf5fb',
+                    errorBorder: '#3498db',
+                    errorColor: '#2c3e50'
+                },
+                red: {
+                    name: 'Красно-желтая',
+                    bodyBg: 'linear-gradient(145deg, #c0392b 0%, #e74c3c 40%, #f39c12 100%)',
+                    infoBg: 'linear-gradient(145deg, #c0392b, #e74c3c)',
+                    btnBg: 'linear-gradient(135deg, #e74c3c, #f39c12)',
+                    accent: '#e74c3c',
+                    accentDark: '#c0392b',
+                    shadow: 'rgba(192, 57, 43, 0.4)',
+                    iconColor: '#f5b7b1',
+                    errorBg: '#fde8e8',
+                    errorBorder: '#e74c3c',
+                    errorColor: '#c0392b'
+                },
+                green: {
+                    name: 'Зеленая',
+                    bodyBg: 'linear-gradient(145deg, #e8f8f0 0%, #d4f0e4 50%, #b8e8d4 100%)',
+                    infoBg: 'linear-gradient(145deg, #27ae60, #2ecc71)',
+                    btnBg: 'linear-gradient(135deg, #2ecc71, #27ae60)',
+                    accent: '#2ecc71',
+                    accentDark: '#27ae60',
+                    shadow: 'rgba(46, 204, 113, 0.25)',
+                    iconColor: '#85e0b0',
+                    errorBg: '#ebf8f0',
+                    errorBorder: '#2ecc71',
+                    errorColor: '#1a7a42'
+                },
+                dark: {
+                    name: 'Темная',
+                    bodyBg: 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                    infoBg: 'linear-gradient(145deg, #2c3e50, #34495e)',
+                    btnBg: 'linear-gradient(135deg, #34495e, #2c3e50)',
+                    accent: '#3498db',
+                    accentDark: '#2980b9',
+                    shadow: 'rgba(44, 62, 80, 0.5)',
+                    iconColor: '#85c1e9',
+                    errorBg: '#2c3e50',
+                    errorBorder: '#3498db',
+                    errorColor: '#ecf0f1'
+                }
+            };
+
+            let currentTheme = localStorage.getItem('parusTheme') || 'blue';
+
+            function applyTheme(themeName) {
+                const theme = themes[themeName];
+                if (!theme) return;
+
+                // Сохраняем в localStorage
+                localStorage.setItem('parusTheme', themeName);
+                currentTheme = themeName;
+
+                // Применяем стили через CSS-переменные
+                const root = document.documentElement;
+                root.style.setProperty('--body-bg', theme.bodyBg);
+                root.style.setProperty('--info-bg', theme.infoBg);
+                root.style.setProperty('--btn-bg', theme.btnBg);
+                root.style.setProperty('--accent-color', theme.accent);
+                root.style.setProperty('--accent-dark', theme.accentDark);
+                root.style.setProperty('--shadow-color', theme.shadow);
+                root.style.setProperty('--icon-color', theme.iconColor);
+                root.style.setProperty('--error-bg', theme.errorBg);
+                root.style.setProperty('--error-border', theme.errorBorder);
+                root.style.setProperty('--error-color', theme.errorColor);
+
+                // Применяем фон страницы
+                document.body.style.background = theme.bodyBg;
+
+                // Применяем фон левого блока
+                loginInfo.style.background = theme.infoBg;
+
+                // Применяем цвет иконок в левом блоке
+                loginInfo.querySelectorAll('.feature-item i').forEach(icon => {
+                    icon.style.color = theme.iconColor;
+                });
+
+                // Применяем кнопку входа
+                loginBtn.style.background = theme.btnBg;
+
+                // Обновляем тень
+                loginWrapper.style.boxShadow = `0 20px 60px ${theme.shadow}`;
+
+                // Обновляем активную кнопку
+                themeButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === themeName);
+                });
+
+                // Для темной темы: меняем цвет текста в форме
+                if (themeName === 'dark') {
+                    loginFormContainer.style.background = '#1a1a2e';
+                    loginFormContainer.querySelectorAll('h2, .form-subtitle, .form-group label, .info-message span').forEach(el => {
+                        el.style.color = '#ecf0f1';
+                    });
+                    loginFormContainer.querySelectorAll('.form-group input').forEach(el => {
+                        el.style.background = '#2c3e50';
+                        el.style.color = '#ecf0f1';
+                        el.style.borderColor = '#34495e';
+                    });
+                    loginFormContainer.querySelector('.login-footer').style.borderTopColor = '#34495e';
+                    loginFormContainer.querySelector('.help-link a').style.color = '#3498db';
+                    loginFormContainer.querySelector('.info-message i').style.color = '#3498db';
+                } else {
+                    // Возвращаем стандартные цвета
+                    loginFormContainer.style.background = '#ffffff';
+                    loginFormContainer.querySelectorAll('h2, .form-subtitle, .form-group label, .info-message span').forEach(el => {
+                        el.style.color = '';
+                    });
+                    loginFormContainer.querySelectorAll('.form-group input').forEach(el => {
+                        el.style.background = '';
+                        el.style.color = '';
+                        el.style.borderColor = '';
+                    });
+                    loginFormContainer.querySelector('.login-footer').style.borderTopColor = '';
+                    loginFormContainer.querySelector('.help-link a').style.color = '';
+                    loginFormContainer.querySelector('.info-message i').style.color = '';
+                }
+
+                console.log(`🎨 Тема "${theme.name}" применена`);
+            }
+
+            // Обработчики кнопок тем
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    applyTheme(theme);
+                });
+            });
+
+            // ============================================
+            // 2. ПОКАЗ/СКРЫТИЕ ПАРОЛЯ
+            // ============================================
+
+            const toggleBtn = document.getElementById('togglePassword');
+            const passwordField = document.getElementById('password');
+
+            if (toggleBtn && passwordField) {
+                toggleBtn.addEventListener('click', function() {
+                    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordField.setAttribute('type', type);
+                    this.querySelector('i').classList.toggle('fa-eye');
+                    this.querySelector('i').classList.toggle('fa-eye-slash');
+                });
+            }
+
+            // ============================================
+            // 3. ОТОБРАЖЕНИЕ ОШИБОК ИЗ URL
+            // ============================================
+
+            function showError(message) {
+                if (!message) return;
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+                errorContainer.innerHTML = '';
+                errorContainer.appendChild(errorDiv);
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            if (errorMsg) {
+                showError(decodeURIComponent(errorMsg));
+            }
+
+            // ============================================
+            // 4. АВТОФОКУС
+            // ============================================
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const usernameField = document.getElementById('username');
+                if (usernameField) usernameField.focus();
+
+                // Применяем сохраненную тему
+                applyTheme(currentTheme);
+            });
+
+            // ============================================
+            // 5. ПЕРЕКЛЮЧЕНИЕ ТЕМ ГОРЯЧИМИ КЛАВИШАМИ (Alt+1-4)
+            // ============================================
+
+            document.addEventListener('keydown', function(e) {
+                if (e.altKey) {
+                    const themeMap = {
+                        '1': 'blue',
+                        '2': 'red',
+                        '3': 'green',
+                        '4': 'dark'
+                    };
+                    const theme = themeMap[e.key];
+                    if (theme) {
+                        e.preventDefault();
+                        applyTheme(theme);
+                    }
+                }
+            });
+
+            console.log('✅ Переключатель тем инициализирован');
+            console.log('   🎨 Alt+1 - Голубая');
+            console.log('   🎨 Alt+2 - Красно-желтая');
+            console.log('   🎨 Alt+3 - Зеленая');
+            console.log('   🎨 Alt+4 - Темная');
+
+        })();
+    </script>
+</body>
+</html>

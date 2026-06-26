@@ -1,0 +1,19 @@
+parus-webapp/
+├── server.js                      # Точка входа
+├── package.json
+├── .env
+├── config/
+│   └── db.js                      # Пул соединений, аутентификация, работа с сессиями
+├── middleware/
+│   └── auth.js                    # requireAuth, защита маршрутов
+├── routes/
+│   ├── authRoutes.js              # Вход, выход, главная страница
+│   ├── ankRoutes.js               # (УДАЛИТЬ или оставить для совместимости)
+│   ├── questsRoutes.js            # НОВЫЙ - маршруты для страницы /quests
+│   └── apiRoutes.js               # Общие API (/api/userinfo и т.д.)
+├── public/
+│   └── styles.css                 # ОБНОВЛЕН - добавлены стили для quests
+└── views/
+    ├── login.html
+    ├── ank.html                   # (можно удалить)
+    └── quests.html                # НОВЫЙ - страница анкет

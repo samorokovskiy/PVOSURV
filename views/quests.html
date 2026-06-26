@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Анкеты - Парус 8</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ============================================
+           Стили для страницы анкет (quests.html)
+           ============================================ */
+
+        .quests-container {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            margin: 0 auto;
+        }
+
+        /* Шапка */
+        .quests-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 16px 30px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .quests-header h1 {
+            font-size: 22px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quests-header h1 i {
+            color: var(--accent-color, #3498db);
+        }
+
+        .quests-user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .quests-user-info span {
+            color: #34495e;
+            font-weight: 500;
+        }
+
+        .quests-user-info .badge {
+            background: var(--accent-color, #3498db);
+            color: white;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Блоки анкет */
+        .quests-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .quest-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px 28px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .quest-card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .quest-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .quest-card-title {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .quest-card-title h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        .quest-card-title .quest-number {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .quest-card-title .quest-theme {
+            font-size: 14px;
+            color: #5d6d7e;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+
+        .quest-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .quest-card-meta span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .quest-card-meta i {
+            color: var(--accent-color, #3498db);
+            width: 16px;
+        }
+
+        .quest-card-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .quest-card-actions .btn-toggle {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--accent-color, #3498db);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .quest-card-actions .btn-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .quest-card-actions .btn-toggle.active {
+            background: #e74c3c;
+        }
+
+        .quest-card-actions .btn-toggle.active:hover {
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .quest-card-actions .quest-status {
+            font-size: 13px;
+            color: #27ae60;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Блок с вопросами (раскрывающийся) */
+        .quest-questions-panel {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #ecf0f1;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        .quest-questions-panel.open {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .quest-questions-panel .placeholder {
+            color: #7f8c8d;
+            font-size: 14px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        /* Загрузка */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+
+        .loading-spinner i {
+            margin-right: 12px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Сообщение "нет анкет" */
+        .no-quests {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .no-quests i {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .no-quests p {
+            font-size: 16px;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .quests-header {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+
+            .quest-card-header {
+                flex-direction: column;
+            }
+
+            .quest-card-actions {
+                flex-direction: row;
+                align-items: center;
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .quest-card-actions .btn-toggle {
+                font-size: 13px;
+                padding: 6px 16px;
+            }
+
+            .quest-card-title h2 {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quests-container {
+                padding: 12px;
+            }
+
+            .quest-card {
+                padding: 16px 18px;
+            }
+
+            .quest-card-meta {
+                font-size: 12px;
+                gap: 8px 16px;
+            }
+        }
+
+        /* Темная тема */
+        [data-theme="dark"] .quests-header,
+        [data-theme="dark"] .quest-card {
+            background: rgba(26, 26, 46, 0.95);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .quests-header h1,
+        [data-theme="dark"] .quest-card-title h2,
+        [data-theme="dark"] .quest-card-title .quest-theme {
+            color: #ecf0f1;
+        }
+
+        [data-theme="dark"] .quests-user-info span {
+            color: #bdc3c7;
+        }
+
+        [data-theme="dark"] .quest-card-meta {
+            color: #95a5a6;
+        }
+
+        [data-theme="dark"] .quest-questions-panel {
+            border-top-color: #2c3e50;
+        }
+
+        [data-theme="dark"] .quest-questions-panel .placeholder {
+            background: #1a1a2e;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="quests-container">
+        <!-- ШАПКА -->
+        <header class="quests-header">
+            <h1><i class="fas fa-poll"></i> Анкеты</h1>
+            <div class="quests-user-info">
+                <span><i class="fas fa-user"></i> <span id="questsUsername">Загрузка...</span></span>
+                <span class="badge" id="questsCount">0</span>
+                <button id="questsLogoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </button>
+            </div>
+        </header>
+
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
+        <main class="quests-grid" id="questsGrid">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner"></i> Загрузка анкет...
+            </div>
+        </main>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================
+            // 1. СОСТОЯНИЕ
+            // ============================================
+
+            const state = {
+                quests: [],
+                openPanels: new Set() // Хранит NRN раскрытых анкет
+            };
+
+            // DOM-ссылки
+            const usernameDisplay = document.getElementById('questsUsername');
+            const questsCount = document.getElementById('questsCount');
+            const logoutBtn = document.getElementById('questsLogoutBtn');
+            const questsGrid = document.getElementById('questsGrid');
+
+            // ============================================
+            // 2. ЗАГРУЗКА ДАННЫХ
+            // ============================================
+
+            async function loadUserInfo() {
+                try {
+                    const resp = await fetch('/api/userinfo');
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        usernameDisplay.textContent = data.username || 'Пользователь';
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки пользователя:', err);
+                }
+            }
+
+            async function loadQuests() {
+                try {
+                    const resp = await fetch('/api/quests-list');
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        state.quests = data.data;
+                        renderQuests();
+                        return true;
+                    } else {
+                        console.error('Ошибка загрузки анкет:', data.error);
+                        showError('Ошибка загрузки анкет: ' + (data.error || 'Неизвестная ошибка'));
+                        return false;
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки анкет:', err);
+                    showError('Ошибка соединения при загрузке анкет');
+                    return false;
+                }
+            }
+
+            // ============================================
+            // 3. РЕНДЕРИНГ
+            // ============================================
+
+            function renderQuests() {
+                const grid = questsGrid;
+
+                if (state.quests.length === 0) {
+                    grid.innerHTML = `
+                        <div class="no-quests">
+                            <i class="fas fa-clipboard"></i>
+                            <p>Нет доступных анкет для прохождения</p>
+                            <p style="font-size:14px; margin-top:8px; color:#95a5a6;">
+                                В данный момент нет активных анкет
+                            </p>
+                        </div>
+                    `;
+                    questsCount.textContent = '0';
+                    return;
+                }
+
+                questsCount.textContent = state.quests.length;
+
+                let html = '';
+                state.quests.forEach(quest => {
+                    const isOpen = state.openPanels.has(quest.NRN);
+                    const btnLabel = isOpen ? 'Закрыть' : 'Вопросы';
+                    const btnIcon = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';
+                    const btnClass = isOpen ? 'btn-toggle active' : 'btn-toggle';
+
+                    // Форматирование дат
+                    const regDate = quest.DREG_DATE ? formatDate(quest.DREG_DATE) : '—';
+                    const beginDate = quest.DBEGIN_DATE ? formatDate(quest.DBEGIN_DATE) : '—';
+                    const endDate = quest.DEND_DATE ? formatDate(quest.DEND_DATE) : '—';
+
+                    html += `
+                        <div class="quest-card" data-nrn="${quest.NRN}">
+                            <div class="quest-card-header" onclick="window._toggleQuests(${quest.NRN})">
+                                <div class="quest-card-title">
+                                    <h2>${escapeHtml(quest.STHEME_NAME || 'Без названия')}</h2>
+                                    <div class="quest-number">Анкета № ${escapeHtml(quest.SNUMB || '—')}</div>
+                                    <div class="quest-theme">${escapeHtml(quest.STHEME_SPLASH || '')}</div>
+                                    <div class="quest-card-meta">
+                                        <span><i class="fas fa-user"></i> ${escapeHtml(quest.SAGNLIST || 'Не указан')}</span>
+                                        <span><i class="fas fa-question-circle"></i> Вопросов: ${quest.NQCOUNT || 0}</span>
+                                        <span><i class="fas fa-calendar-plus"></i> Создана: ${regDate}</span>
+                                        <span><i class="fas fa-calendar-check"></i> Начало: ${beginDate}</span>
+                                        <span><i class="fas fa-calendar-times"></i> Окончание: ${endDate}</span>
+                                    </div>
+                                </div>
+                                <div class="quest-card-actions">
+                                    <div class="quest-status">
+                                        <i class="fas fa-check-circle"></i> Активна
+                                    </div>
+                                    <button class="${btnClass}" onclick="event.stopPropagation(); window._toggleQuests(${quest.NRN})">
+                                        <i class="fas ${btnIcon}"></i> ${btnLabel}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="quest-questions-panel ${isOpen ? 'open' : ''}" id="panel_${quest.NRN}">
+                                <div class="placeholder">
+                                    <i class="fas fa-spinner fa-pulse"></i> Загрузка вопросов...
+                                    <br><br>
+                                    <small style="color:#95a5a6;">Содержимое будет разработано позднее</small>
+                                </div>
+                                <!-- Здесь будут вопросы -->
+                            </div>
+                        </div>
+                    `;
+                });
+
+                grid.innerHTML = html;
+            }
+
+            // ============================================
+            // 4. ПЕРЕКЛЮЧЕНИЕ ПАНЕЛИ ВОПРОСОВ
+            // ============================================
+
+            window._toggleQuests = function(nrn) {
+                if (state.openPanels.has(nrn)) {
+                    state.openPanels.delete(nrn);
+                } else {
+                    state.openPanels.add(nrn);
+                }
+                renderQuests();
+            };
+
+            // ============================================
+            // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+            // ============================================
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function formatDate(dateValue) {
+                if (!dateValue) return '—';
+                try {
+                    const date = new Date(dateValue);
+                    if (isNaN(date.getTime())) return '—';
+                    return date.toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    return '—';
+                }
+            }
+
+            function showError(message) {
+                questsGrid.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#e74c3c; background:rgba(255,255,255,0.95); border-radius:12px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:48px; display:block; margin-bottom:16px;"></i>
+                        <p>${escapeHtml(message)}</p>
+                        <button onclick="location.reload()" style="margin-top:16px; padding:8px 24px; border:none; border-radius:6px; background:var(--accent-color, #3498db); color:white; cursor:pointer;">
+                            <i class="fas fa-sync"></i> Обновить
+                        </button>
+                    </div>
+                `;
+            }
+
+            // ============================================
+            // 6. ВЫХОД
+            // ============================================
+
+            logoutBtn.addEventListener('click', async () => {
+                if (!confirm('Вы уверены, что хотите выйти?')) return;
+
+                try {
+                    const resp = await fetch('/logout', { method: 'POST' });
+                    const data = await resp.json();
+                    if (data.success) {
+                        window.location.href = data.redirect || '/';
+                    }
+                } catch (err) {
+                    console.error('Ошибка выхода:', err);
+                    window.location.href = '/';
+                }
+            });
+
+            // ============================================
+            // 7. ИНИЦИАЛИЗАЦИЯ
+            // ============================================
+
+            async function init() {
+                await loadUserInfo();
+                await loadQuests();
+            }
+
+            document.addEventListener('DOMContentLoaded', init);
+
+        })();
+    </script>
+</body>
+</html>

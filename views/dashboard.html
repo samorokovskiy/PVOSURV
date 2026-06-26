@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель управления - Парус 8 Web</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>📊 Панель управления</h1>
+            <div class="user-info">
+                <span>👤 <span id="usernameDisplay">Загрузка...</span></span>
+                <button id="logoutBtn" class="btn-logout">Выйти</button>
+            </div>
+        </header>
+        
+        <main class="dashboard-main">
+            <div class="card">
+                <h2>📋 Запросы к представлениям</h2>
+                <p>Выполнение SQL-запросов к представлениям Oracle</p>
+                <div class="form-group">
+                    <textarea id="sqlQuery" rows="4" placeholder="SELECT * FROM some_view WHERE ..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-family:monospace;"></textarea>
+                </div>
+                <button id="executeQueryBtn" class="btn-primary">Выполнить запрос</button>
+                <div id="queryResult" style="margin-top:15px; padding:10px; background:#f5f5f5; border-radius:4px; display:none;"></div>
+            </div>
+            
+            <div class="card">
+                <h2>⚙️ Вызов хранимых процедур</h2>
+                <p>Выполнение PL/SQL процедур с параметрами</p>
+                <div class="form-group">
+                    <label>Имя процедуры:</label>
+                    <input type="text" id="procName" placeholder="PKG_NAME.PROCEDURE_NAME" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                </div>
+                <div class="form-group">
+                    <label>Параметры (JSON):</label>
+                    <textarea id="procParams" rows="3" placeholder='{"param1": "value1", "param2": "value2"}' style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-family:monospace;"></textarea>
+                </div>
+                <button id="executeProcBtn" class="btn-primary">Вызвать процедуру</button>
+                <div id="procResult" style="margin-top:15px; padding:10px; background:#f5f5f5; border-radius:4px; display:none;"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Подключаем клиентскую логику -->
+    <script>
+        (function() {
+            'use strict';
+
+            // ============================================
+            // 1. ОТОБРАЖЕНИЕ ИМЕНИ ПОЛЬЗОВАТЕЛЯ
+            // ============================================
+            async function loadUserInfo() {
+                try {
+                    const response = await fetch('/api/userinfo');
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById('usernameDisplay').textContent = data.username || 'Пользователь';
+                    } else {
+                        document.getElementById('usernameDisplay').textContent = 'Ошибка загрузки';
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки информации пользователя:', err);
+                    document.getElementById('usernameDisplay').textContent = 'Ошибка';
+                }
+            }
+
+            // ============================================
+            // 2. ВЫХОД ИЗ СИСТЕМЫ
+            // ============================================
+            async function handleLogout() {
+                if (!confirm('Вы уверены, что хотите выйти?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Перенаправляем на страницу входа
+                        window.location.href = data.redirect || '/';
+                    } else {
+                        console.error('Ошибка выхода:', data);
+                        alert('Не удалось выйти из системы. Попробуйте еще раз.');
+                    }
+                } catch (err) {
+                    console.error('Ошибка при выходе:', err);
+                    alert('Ошибка соединения при выходе. Перезагрузите страницу.');
+                    // Запасной вариант - редирект на главную
+                    window.location.href = '/';
+                }
+            }
+
+            // ============================================
+            // 3. ВЫПОЛНЕНИЕ ЗАПРОСА К ПРЕДСТАВЛЕНИЮ
+            // ============================================
+            async function executeQuery() {
+                const sql = document.getElementById('sqlQuery').value.trim();
+                const resultDiv = document.getElementById('queryResult');
+
+                if (!sql) {
+                    alert('Введите SQL-запрос');
+                    return;
+                }
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<div style="color:#666;">⏳ Выполнение запроса...</div>';
+
+                try {
+                    const response = await fetch('/api/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ sql })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        if (data.data && data.data.length > 0) {
+                            // Формируем таблицу с результатами
+                            const columns = Object.keys(data.data[0]);
+                            let html = '<table style="width:100%; border-collapse:collapse; font-size:13px;">';
+                            html += '<thead><tr style="background:#667eea; color:white;">';
+                            columns.forEach(col => {
+                                html += `<th style="padding:8px; border:1px solid #ddd; text-align:left;">${col}</th>`;
+                            });
+                            html += '</tr></thead><tbody>';
+                            data.data.forEach(row => {
+                                html += '<tr>';
+                                columns.forEach(col => {
+                                    const value = row[col] !== null && row[col] !== undefined ? row[col] : '';
+                                    html += `<td style="padding:6px 8px; border:1px solid #ddd;">${value}</td>`;
+                                });
+                                html += '</tr>';
+                            });
+                            html += '</tbody></table>';
+                            html += `<div style="margin-top:8px; color:#666; font-size:12px;">Найдено записей: ${data.data.length}</div>`;
+                            resultDiv.innerHTML = html;
+                        } else {
+                            resultDiv.innerHTML = '<div style="color:#999;">✅ Запрос выполнен успешно, но данные не найдены.</div>';
+                        }
+                    } else {
+                        resultDiv.innerHTML = `<div style="color:#e74c3c;">❌ Ошибка: ${data.error || 'Неизвестная ошибка'}</div>`;
+                    }
+                } catch (err) {
+                    console.error('Ошибка выполнения запроса:', err);
+                    resultDiv.innerHTML = `<div style="color:#e74c3c;">❌ Ошибка соединения: ${err.message}</div>`;
+                }
+            }
+
+            // ============================================
+            // 4. ВЫЗОВ ХРАНИМОЙ ПРОЦЕДУРЫ
+            // ============================================
+            async function executeProcedure() {
+                const procName = document.getElementById('procName').value.trim();
+                const paramsText = document.getElementById('procParams').value.trim();
+                const resultDiv = document.getElementById('procResult');
+
+                if (!procName) {
+                    alert('Введите имя процедуры');
+                    return;
+                }
+
+                let params = {};
+                if (paramsText) {
+                    try {
+                        params = JSON.parse(paramsText);
+                    } catch (err) {
+                        alert('Ошибка парсинга параметров. Убедитесь, что JSON корректен.');
+                        return;
+                    }
+                }
+
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<div style="color:#666;">⏳ Выполнение процедуры...</div>';
+
+                try {
+                    const response = await fetch('/api/procedure', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ procedureName: procName, params })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        resultDiv.innerHTML = `
+                            <div style="color:#27ae60;">✅ Процедура выполнена успешно</div>
+                            <div style="margin-top:8px; background:#f8f9fa; padding:10px; border-radius:4px; font-family:monospace; font-size:13px; white-space:pre-wrap;">${JSON.stringify(data.result || data, null, 2)}</div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `<div style="color:#e74c3c;">❌ Ошибка: ${data.error || 'Неизвестная ошибка'}</div>`;
+                    }
+                } catch (err) {
+                    console.error('Ошибка вызова процедуры:', err);
+                    resultDiv.innerHTML = `<div style="color:#e74c3c;">❌ Ошибка соединения: ${err.message}</div>`;
+                }
+            }
+
+            // ============================================
+            // 5. ИНИЦИАЛИЗАЦИЯ: ПОДКЛЮЧАЕМ ОБРАБОТЧИКИ
+            // ============================================
+            document.addEventListener('DOMContentLoaded', function() {
+                // Загружаем имя пользователя
+                loadUserInfo();
+
+                // Кнопка выхода
+                document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+                // Кнопка выполнения запроса
+                document.getElementById('executeQueryBtn').addEventListener('click', executeQuery);
+
+                // Кнопка вызова процедуры
+                document.getElementById('executeProcBtn').addEventListener('click', executeProcedure);
+
+                // Поддержка Ctrl+Enter для выполнения запроса
+                document.getElementById('sqlQuery').addEventListener('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        e.preventDefault();
+                        executeQuery();
+                    }
+                });
+
+                console.log('✅ Dashboard инициализирован');
+            });
+
+        })();
+    </script>
+</body>
+</html>
