@@ -207,13 +207,116 @@
             }
         }
 
-        .quest-questions-panel .placeholder {
-            color: #7f8c8d;
-            font-size: 14px;
-            padding: 20px;
-            text-align: center;
+        /* ============================================
+           Стили для списка вопросов
+           ============================================ */
+
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .question-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 16px;
             background: #f8f9fa;
             border-radius: 8px;
+            border-left: 3px solid var(--accent-color, #3498db);
+            transition: background 0.2s ease;
+        }
+
+        .question-item:hover {
+            background: #f0f2f5;
+        }
+
+        .question-item .q-number {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent-color, #3498db);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 1px;
+        }
+
+        .question-item .q-text {
+            flex: 1;
+            font-size: 15px;
+            color: #2c3e50;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .question-item .q-type-badge {
+            flex-shrink: 0;
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #ecf0f1;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .question-item .q-type-badge.type-0 {
+            background: #e8daef;
+            color: #8e44ad;
+        }
+
+        .question-item .q-type-badge.type-1 {
+            background: #d6eaf8;
+            color: #2980b9;
+        }
+
+        .question-item .q-type-badge.type-2 {
+            background: #fdebd0;
+            color: #e67e22;
+        }
+
+        .questions-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 0;
+            color: #7f8c8d;
+            font-size: 14px;
+            gap: 10px;
+        }
+
+        .questions-loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        .questions-error {
+            padding: 20px;
+            text-align: center;
+            color: #e74c3c;
+            background: #fde8e8;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .questions-empty {
+            padding: 20px;
+            text-align: center;
+            color: #95a5a6;
+            font-size: 14px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Сообщение "нет активных анкет" */
@@ -267,11 +370,6 @@
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
         /* Адаптивность */
         @media (max-width: 768px) {
             .quests-header {
@@ -298,6 +396,27 @@
 
             .quest-card-title h2 {
                 font-size: 16px;
+            }
+
+            .question-item {
+                flex-wrap: wrap;
+                gap: 8px 14px;
+            }
+
+            .question-item .q-text {
+                font-size: 14px;
+                order: 2;
+                flex-basis: 100%;
+                margin-left: 42px;
+            }
+
+            .question-item .q-number {
+                order: 1;
+            }
+
+            .question-item .q-type-badge {
+                order: 3;
+                margin-left: auto;
             }
 
             .no-quests {
@@ -330,6 +449,21 @@
                 font-size: 12px;
                 gap: 8px 16px;
             }
+
+            .question-item {
+                padding: 10px 12px;
+            }
+
+            .question-item .q-text {
+                font-size: 13px;
+                margin-left: 0;
+            }
+
+            .question-item .q-number {
+                width: 24px;
+                height: 24px;
+                font-size: 11px;
+            }
         }
 
         /* Темная тема */
@@ -359,9 +493,27 @@
             border-top-color: #2c3e50;
         }
 
-        [data-theme="dark"] .quest-questions-panel .placeholder {
+        [data-theme="dark"] .question-item {
+            background: #1a1a2e;
+            border-left-color: var(--accent-color, #3498db);
+        }
+
+        [data-theme="dark"] .question-item:hover {
+            background: #2c3e50;
+        }
+
+        [data-theme="dark"] .question-item .q-text {
+            color: #ecf0f1;
+        }
+
+        [data-theme="dark"] .questions-empty {
             background: #1a1a2e;
             color: #95a5a6;
+        }
+
+        [data-theme="dark"] .questions-error {
+            background: #2c1a1a;
+            color: #e74c3c;
         }
 
         [data-theme="dark"] .no-quests .no-quests-subtitle {
@@ -402,7 +554,8 @@
             const state = {
                 quests: [],
                 openPanels: new Set(),
-                username: 'Пользователь'  // ← Добавлено
+                questionsCache: {},  // Кеш вопросов по NRN анкеты
+                username: 'Пользователь'
             };
 
             // DOM-ссылки
@@ -450,13 +603,39 @@
             }
 
             // ============================================
-            // 3. РЕНДЕРИНГ
+            // 3. ЗАГРУЗКА ВОПРОСОВ ДЛЯ АНКЕТЫ
+            // ============================================
+
+            async function loadQuestionsForQuest(questNrn) {
+                // Проверяем кеш
+                if (state.questionsCache[questNrn]) {
+                    return state.questionsCache[questNrn];
+                }
+
+                try {
+                    const resp = await fetch(`/api/quests-questions/${questNrn}`);
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        state.questionsCache[questNrn] = data.data;
+                        return data.data;
+                    } else {
+                        console.error('Ошибка загрузки вопросов:', data.error);
+                        return null;
+                    }
+                } catch (err) {
+                    console.error('Ошибка загрузки вопросов:', err);
+                    return null;
+                }
+            }
+
+            // ============================================
+            // 4. РЕНДЕРИНГ
             // ============================================
 
             function renderQuests() {
                 const grid = questsGrid;
 
-                // Если нет анкет - показываем персонализированное сообщение
                 if (state.quests.length === 0) {
                     const username = state.username || 'Пользователь';
                     grid.innerHTML = `
@@ -465,7 +644,7 @@
                             <div class="no-quests-title">Нет активных анкет</div>
                             <div class="no-quests-subtitle">
                                 Для пользователя <span class="no-quests-username">${escapeHtml(username)}</span> 
-                                в данный момент нет активных анкет.
+                                нет активных анкет в данный момент
                             </div>
                             <div style="margin-top:12px; font-size:13px; color:#95a5a6;">
                                 <i class="fas fa-info-circle"></i>
@@ -489,6 +668,11 @@
                     const regDate = quest.DREG_DATE ? formatDate(quest.DREG_DATE) : '—';
                     const beginDate = quest.DBEGIN_DATE ? formatDate(quest.DBEGIN_DATE) : '—';
                     const endDate = quest.DEND_DATE ? formatDate(quest.DEND_DATE) : '—';
+
+                    // Если панель открыта, загружаем вопросы
+                    const panelContent = isOpen ? 
+                        `<div class="questions-loading"><i class="fas fa-spinner"></i> Загрузка вопросов...</div>` :
+                        '';
 
                     html += `
                         <div class="quest-card" data-nrn="${quest.NRN}">
@@ -515,21 +699,79 @@
                                 </div>
                             </div>
                             <div class="quest-questions-panel ${isOpen ? 'open' : ''}" id="panel_${quest.NRN}">
-                                <div class="placeholder">
-                                    <i class="fas fa-spinner fa-pulse"></i> Загрузка вопросов...
-                                    <br><br>
-                                    <small style="color:#95a5a6;">Содержимое будет разработано позднее</small>
-                                </div>
+                                ${panelContent}
                             </div>
                         </div>
                     `;
                 });
 
                 grid.innerHTML = html;
+
+                // Для открытых панелей загружаем вопросы
+                state.openPanels.forEach(nrn => {
+                    renderQuestionsForPanel(nrn);
+                });
             }
 
             // ============================================
-            // 4. ПЕРЕКЛЮЧЕНИЕ ПАНЕЛИ ВОПРОСОВ
+            // 5. ОТОБРАЖЕНИЕ ВОПРОСОВ В ПАНЕЛИ
+            // ============================================
+
+            async function renderQuestionsForPanel(questNrn) {
+                const panel = document.getElementById(`panel_${questNrn}`);
+                if (!panel) return;
+
+                // Если уже есть контент и он не является loading, пропускаем
+                if (panel.dataset.loaded === 'true') return;
+
+                const questions = await loadQuestionsForQuest(questNrn);
+
+                if (questions === null) {
+                    panel.innerHTML = `
+                        <div class="questions-error">
+                            <i class="fas fa-exclamation-triangle"></i> Ошибка загрузки вопросов
+                        </div>
+                    `;
+                    panel.dataset.loaded = 'error';
+                    return;
+                }
+
+                if (questions.length === 0) {
+                    panel.innerHTML = `
+                        <div class="questions-empty">
+                            <i class="fas fa-info-circle"></i> Вопросов для этой анкеты не найдено
+                        </div>
+                    `;
+                    panel.dataset.loaded = 'true';
+                    return;
+                }
+
+                // Типы вопросов для отображения
+                const typeLabels = {
+                    0: 'Свободный ввод',
+                    1: 'Одиночный выбор',
+                    2: 'Множественный выбор'
+                };
+
+                let html = '<div class="questions-list">';
+                questions.forEach((q, index) => {
+                    const typeLabel = typeLabels[q.NCHOISE_TYPE] || 'Неизвестный';
+                    html += `
+                        <div class="question-item">
+                            <span class="q-number">${index + 1}</span>
+                            <span class="q-text">${escapeHtml(q.SQUESTION || 'Вопрос без текста')}</span>
+                            <span class="q-type-badge type-${q.NCHOISE_TYPE}">${typeLabel}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+
+                panel.innerHTML = html;
+                panel.dataset.loaded = 'true';
+            }
+
+            // ============================================
+            // 6. ПЕРЕКЛЮЧЕНИЕ ПАНЕЛИ ВОПРОСОВ
             // ============================================
 
             window._toggleQuests = function(nrn) {
@@ -542,7 +784,7 @@
             };
 
             // ============================================
-            // 5. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+            // 7. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
             // ============================================
 
             function escapeHtml(str) {
@@ -582,7 +824,7 @@
             }
 
             // ============================================
-            // 6. ВЫХОД
+            // 8. ВЫХОД
             // ============================================
 
             logoutBtn.addEventListener('click', async () => {
@@ -601,7 +843,7 @@
             });
 
             // ============================================
-            // 7. ИНИЦИАЛИЗАЦИЯ
+            // 9. ИНИЦИАЛИЗАЦИЯ
             // ============================================
 
             async function init() {

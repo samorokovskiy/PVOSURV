@@ -26,10 +26,6 @@ module.exports = function(app) {
         try {
             const connection = await getConnectionForSession(req, connectionManager);
 
-            // Представление V_UD_QUESTS уже фильтрует данные:
-            // - только активные анкеты (nACTIVE = 1)
-            // - только для текущего пользователя (через контекст сессии)
-            // - только в период действия (DBEGIN_DATE <= SYSDATE <= DEND_DATE)
             const result = await connection.execute(
                 `SELECT 
                     NRN,
@@ -51,6 +47,42 @@ module.exports = function(app) {
 
         } catch (err) {
             console.error('❌ Ошибка получения списка анкет:', err.message);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ============================================
+    // API: ПОЛУЧЕНИЕ ВОПРОСОВ ДЛЯ АНКЕТЫ
+    // ============================================
+
+    app.get('/api/quests-questions/:nrn', requireAuth, async (req, res) => {
+        try {
+            const { nrn } = req.params;
+            
+            if (!nrn) {
+                return res.status(400).json({ success: false, error: 'Не указан номер анкеты' });
+            }
+
+            const connection = await getConnectionForSession(req, connectionManager);
+
+            const result = await connection.execute(
+                `SELECT 
+                    NRN,
+                    NPRN,
+                    NORD,
+                    SQUESTION,
+                    NCHOISE_TYPE
+                 FROM ${SCHEMA}.V_UD_QUESTSQ
+                 WHERE NPRN = :NPRN
+                 ORDER BY NORD, NRN`,
+                { NPRN: parseInt(nrn) },
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            res.json({ success: true, data: result.rows });
+
+        } catch (err) {
+            console.error('❌ Ошибка получения вопросов для анкеты:', err.message);
             res.status(500).json({ success: false, error: err.message });
         }
     });
