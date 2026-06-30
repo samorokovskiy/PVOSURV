@@ -77,10 +77,30 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
             transition: box-shadow 0.3s ease;
+            position: relative;
         }
 
         .quest-card:hover {
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .quest-card.completed {
+            border-left: 4px solid #27ae60;
+            opacity: 0.85;
+        }
+
+        .quest-card.completed .quest-status {
+            color: #27ae60;
+        }
+
+        .quest-card.completed .btn-complete {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .quest-card.completed .btn-complete:hover {
+            transform: none;
+            box-shadow: none;
         }
 
         .quest-card-header {
@@ -144,6 +164,14 @@
             flex-shrink: 0;
         }
 
+        .quest-card-actions .quest-status {
+            font-size: 13px;
+            color: #27ae60;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .quest-card-actions .btn-toggle {
             padding: 8px 20px;
             border: none;
@@ -173,12 +201,24 @@
             box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
         }
 
-        .quest-card-actions .quest-status {
+        .quest-card-actions .btn-complete {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 6px;
             font-size: 13px;
-            color: #27ae60;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #27ae60;
+            color: white;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+        }
+
+        .quest-card-actions .btn-complete:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
         }
 
         .quest-questions-panel {
@@ -550,11 +590,17 @@
                 align-items: center;
                 width: 100%;
                 justify-content: space-between;
+                flex-wrap: wrap;
             }
 
             .quest-card-actions .btn-toggle {
                 font-size: 13px;
                 padding: 6px 16px;
+            }
+
+            .quest-card-actions .btn-complete {
+                font-size: 12px;
+                padding: 4px 12px;
             }
 
             .quest-card-title h2 {
@@ -800,6 +846,19 @@
             background: #2c1a1a;
             border-left-color: #e74c3c;
         }
+
+        [data-theme="dark"] .quest-card.completed {
+            border-left-color: #27ae60;
+        }
+
+        [data-theme="dark"] .quest-card.completed .quest-status {
+            color: #5ade7a;
+        }
+
+        [data-theme="dark"] .quest-card.completed .btn-complete {
+            background: #2c3e50;
+            color: #95a5a6;
+        }
     </style>
 </head>
 <body>
@@ -838,7 +897,8 @@
                 questionsCache: {},
                 questionsPages: {},
                 choicesCache: {},
-                username: 'Пользователь'
+                username: 'Пользователь',
+                completedQuests: new Set() // Хранит NRN завершенных анкет
             };
 
             // DOM-ссылки
@@ -939,7 +999,7 @@
             }
 
             // ============================================
-            // 4. СОХРАНЕНИЕ ОТВЕТА (ОБНОВЛЕННОЕ)
+            // 4. СОХРАНЕНИЕ ОТВЕТА
             // ============================================
 
             async function saveAnswer(questionNrn, choiceType, choicesData) {
@@ -975,7 +1035,38 @@
             }
 
             // ============================================
-            // 5. ОБНОВЛЕНИЕ СТАТУСА ВОПРОСА
+            // 5. ЗАВЕРШЕНИЕ ОПРОСА
+            // ============================================
+
+            async function closeQuestionnaire(questNrn) {
+                if (!confirm('Вы уверены, что хотите завершить опрос? После завершения вы не сможете изменить свои ответы.')) {
+                    return;
+                }
+
+                try {
+                    const resp = await fetch('/api/close-questionnaire', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ questNrn: questNrn })
+                    });
+
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        alert('✅ Опрос успешно завершен!');
+                        // Обновляем страницу
+                        location.reload();
+                    } else {
+                        alert('❌ Ошибка завершения опроса: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                } catch (err) {
+                    console.error('❌ Ошибка завершения опроса:', err);
+                    alert('❌ Ошибка соединения при завершении опроса');
+                }
+            }
+
+            // ============================================
+            // 6. ОБНОВЛЕНИЕ СТАТУСА ВОПРОСА
             // ============================================
 
             function updateQuestionStatus(questionNrn) {
@@ -998,7 +1089,7 @@
             }
 
             // ============================================
-            // 6. ПРОВЕРКА ОТВЕЧЕННОСТИ ВОПРОСА
+            // 7. ПРОВЕРКА ОТВЕЧЕННОСТИ ВОПРОСА
             // ============================================
 
             function checkQuestionAnswered(questionNrn) {
@@ -1023,7 +1114,7 @@
             }
 
             // ============================================
-            // 7. ОТОБРАЖЕНИЕ ОШИБКИ СОХРАНЕНИЯ
+            // 8. ОТОБРАЖЕНИЕ ОШИБКИ СОХРАНЕНИЯ
             // ============================================
 
             function showSaveError(questionNrn, message) {
@@ -1048,7 +1139,7 @@
             }
 
             // ============================================
-            // 8. РЕНДЕРИНГ ВОПРОСОВ С ВАРИАНТАМИ ОТВЕТОВ
+            // 9. РЕНДЕРИНГ ВОПРОСОВ С ВАРИАНТАМИ ОТВЕТОВ
             // ============================================
 
             async function renderQuestionsForPanel(questNrn, page) {
@@ -1085,9 +1176,9 @@
                 }
 
                 const typeLabels = {
-                    0: 'Свободный ввод',
-                    1: 'Одиночный выбор',
-                    2: 'Множественный выбор'
+                    0: 'Введите ответ на вопрос',
+                    1: 'Выберите один вариант',
+                    2: 'Выберите один или несколько вариантов'
                 };
 
                 const startIndex = (pagination.page - 1) * pagination.limit;
@@ -1199,7 +1290,7 @@
                 panel.innerHTML = html;
 
                 // ============================================
-                // 9. ПРИВЯЗКА СОБЫТИЙ ДЛЯ АВТОСОХРАНЕНИЯ
+                // 10. ПРИВЯЗКА СОБЫТИЙ ДЛЯ АВТОСОХРАНЕНИЯ
                 // ============================================
 
                 // === Текстовые поля (свободный ввод) ===
@@ -1260,7 +1351,6 @@
                         const questionNrn = parseInt(this.dataset.questionNrn);
                         const choiceType = 1;
                         
-                        // Собираем ВСЕ радиокнопки этого вопроса
                         const questionItem = this.closest('.question-item');
                         const allRadios = questionItem.querySelectorAll('input[type="radio"]');
                         const choicesData = Array.from(allRadios).map(r => ({
@@ -1268,7 +1358,6 @@
                             isValid: r.checked ? 1 : 0
                         }));
                         
-                        // Обновляем кеш
                         const choices = state.choicesCache[questionNrn] || [];
                         choicesData.forEach(data => {
                             const cached = choices.find(c => c.NRN === data.nrn);
@@ -1289,7 +1378,6 @@
                         const questionNrn = parseInt(this.dataset.questionNrn);
                         const choiceType = 2;
                         
-                        // Собираем ВСЕ чекбоксы этого вопроса
                         const questionItem = this.closest('.question-item');
                         const allCheckboxes = questionItem.querySelectorAll('input[type="checkbox"]');
                         const choicesData = Array.from(allCheckboxes).map(cb => ({
@@ -1297,7 +1385,6 @@
                             isValid: cb.checked ? 1 : 0
                         }));
                         
-                        // Обновляем кеш
                         const choices = state.choicesCache[questionNrn] || [];
                         choicesData.forEach(data => {
                             const cached = choices.find(c => c.NRN === data.nrn);
@@ -1313,7 +1400,7 @@
             }
 
             // ============================================
-            // 10. ПЕРЕКЛЮЧЕНИЕ ПАНЕЛИ И СТРАНИЦ
+            // 11. ПЕРЕКЛЮЧЕНИЕ ПАНЕЛИ И СТРАНИЦ
             // ============================================
 
             window._toggleQuests = function(nrn) {
@@ -1333,7 +1420,7 @@
             };
 
             // ============================================
-            // 11. РЕНДЕРИНГ АНКЕТ
+            // 12. РЕНДЕРИНГ АНКЕТ
             // ============================================
 
             function renderQuests() {
@@ -1364,9 +1451,11 @@
                 let html = '';
                 state.quests.forEach(quest => {
                     const isOpen = state.openPanels.has(quest.NRN);
+                    const isCompleted = state.completedQuests.has(quest.NRN);
                     const btnLabel = isOpen ? 'Закрыть' : 'Вопросы';
                     const btnIcon = isOpen ? 'fa-chevron-up' : 'fa-chevron-down';
                     const btnClass = isOpen ? 'btn-toggle active' : 'btn-toggle';
+                    const cardClass = isCompleted ? 'quest-card completed' : 'quest-card';
 
                     const regDate = quest.DREG_DATE ? formatDate(quest.DREG_DATE) : '—';
                     const beginDate = quest.DBEGIN_DATE ? formatDate(quest.DBEGIN_DATE) : '—';
@@ -1377,7 +1466,7 @@
                         '';
 
                     html += `
-                        <div class="quest-card" data-nrn="${quest.NRN}">
+                        <div class="${cardClass}" data-nrn="${quest.NRN}">
                             <div class="quest-card-header" onclick="window._toggleQuests(${quest.NRN})">
                                 <div class="quest-card-title">
                                     <h2>${escapeHtml(quest.STHEME_NAME || 'Без названия')}</h2>
@@ -1393,11 +1482,19 @@
                                 </div>
                                 <div class="quest-card-actions">
                                     <div class="quest-status">
-                                        <i class="fas fa-check-circle"></i> Активна
+                                        <i class="fas ${isCompleted ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                        ${isCompleted ? 'Завершена' : 'Активна'}
                                     </div>
-                                    <button class="${btnClass}" onclick="event.stopPropagation(); window._toggleQuests(${quest.NRN})">
-                                        <i class="fas ${btnIcon}"></i> ${btnLabel}
-                                    </button>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+                                        <button class="${btnClass}" onclick="event.stopPropagation(); window._toggleQuests(${quest.NRN})">
+                                            <i class="fas ${btnIcon}"></i> ${btnLabel}
+                                        </button>
+                                        ${!isCompleted ? `
+                                            <button class="btn-complete" onclick="event.stopPropagation(); window._closeQuestionnaire(${quest.NRN})">
+                                                <i class="fas fa-check"></i> Завершить опрос
+                                            </button>
+                                        ` : ''}
+                                    </div>
                                 </div>
                             </div>
                             <div class="quest-questions-panel ${isOpen ? 'open' : ''}" id="panel_${quest.NRN}">
@@ -1415,7 +1512,15 @@
             }
 
             // ============================================
-            // 12. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+            // 13. ЗАВЕРШЕНИЕ ОПРОСА (глобальная функция)
+            // ============================================
+
+            window._closeQuestionnaire = function(questNrn) {
+                closeQuestionnaire(questNrn);
+            };
+
+            // ============================================
+            // 14. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
             // ============================================
 
             function escapeHtml(str) {
@@ -1455,7 +1560,7 @@
             }
 
             // ============================================
-            // 13. ВЫХОД
+            // 15. ВЫХОД
             // ============================================
 
             logoutBtn.addEventListener('click', async () => {
@@ -1474,7 +1579,7 @@
             });
 
             // ============================================
-            // 14. ИНИЦИАЛИЗАЦИЯ
+            // 16. ИНИЦИАЛИЗАЦИЯ
             // ============================================
 
             async function init() {

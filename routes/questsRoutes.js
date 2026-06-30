@@ -175,7 +175,7 @@ module.exports = function(app) {
     });
 
     // ============================================
-    // API: СОХРАНЕНИЕ ОТВЕТА (ОБНОВЛЕННЫЙ)
+    // API: СОХРАНЕНИЕ ОТВЕТА
     // ============================================
 
     app.post('/api/save-answer', requireAuth, async (req, res) => {
@@ -188,7 +188,6 @@ module.exports = function(app) {
         try {
             const connection = await getConnectionForSession(req, connectionManager);
 
-            // В зависимости от типа вопроса обрабатываем по-разному
             if (choiceType === 0) {
                 // Свободный ввод: сохраняем только текст
                 const answerText = choices?.[0]?.text || '';
@@ -203,20 +202,19 @@ module.exports = function(app) {
                     END;`,
                     [
                         questionNrn,
-                        null,           // NRN варианта
-                        null,           // NVALID
-                        answerText      // STEXT
+                        null,
+                        null,
+                        answerText
                     ]
                 );
                 console.log(`✅ Текстовый ответ сохранен для вопроса ${questionNrn}`);
                 
             } else if (choiceType === 1 || choiceType === 2) {
-                // Одиночный или множественный выбор: сохраняем ВСЕ варианты с их состояниями
+                // Одиночный или множественный выбор: сохраняем ВСЕ варианты
                 if (!choices || choices.length === 0) {
                     return res.status(400).json({ success: false, error: 'Не переданы варианты ответов' });
                 }
 
-                // Для каждого варианта вызываем процедуру
                 for (const choice of choices) {
                     await connection.execute(
                         `BEGIN
@@ -229,9 +227,9 @@ module.exports = function(app) {
                         END;`,
                         [
                             questionNrn,
-                            choice.nrn,           // NRN варианта
-                            choice.isValid ? 1 : 0, // NVALID (1 или 0)
-                            null                  // STEXT (не используется)
+                            choice.nrn,
+                            choice.isValid ? 1 : 0,
+                            null
                         ]
                     );
                 }
@@ -246,6 +244,37 @@ module.exports = function(app) {
 
         } catch (err) {
             console.error('❌ Ошибка сохранения ответа:', err.message);
+            res.status(500).json({ success: false, error: err.message });
+        }
+    });
+
+    // ============================================
+    // API: ЗАВЕРШЕНИЕ ОПРОСА
+    // ============================================
+
+    app.post('/api/close-questionnaire', requireAuth, async (req, res) => {
+        const { questNrn } = req.body;
+
+        if (!questNrn) {
+            return res.status(400).json({ success: false, error: 'Не указан номер анкеты' });
+        }
+
+        try {
+            const connection = await getConnectionForSession(req, connectionManager);
+
+            // Вызываем процедуру завершения опроса
+            await connection.execute(
+                `BEGIN
+                    ${SCHEMA}.P_UD_QUESTS_CLOSE(:1);
+                END;`,
+                [parseInt(questNrn)]
+            );
+
+            console.log(`✅ Опрос для анкеты ${questNrn} завершен`);
+            res.json({ success: true });
+
+        } catch (err) {
+            console.error('❌ Ошибка завершения опроса:', err.message);
             res.status(500).json({ success: false, error: err.message });
         }
     });
