@@ -55,7 +55,7 @@ module.exports = function(app) {
     });
 
     // ============================================
-    // API: ПОЛУЧЕНИЕ ВОПРОСОВ ДЛЯ АНКЕТЫ (с пагинацией через ROWNUM)
+    // API: ПОЛУЧЕНИЕ ВОПРОСОВ ДЛЯ АНКЕТЫ (с пагинацией)
     // ============================================
 
     app.get('/api/quests-questions/:nrn', requireAuth, async (req, res) => {
@@ -175,44 +175,73 @@ module.exports = function(app) {
     });
 
     // ============================================
-    // API: СОХРАНЕНИЕ ОТВЕТА НА ВОПРОС
+    // API: СОХРАНЕНИЕ ОТВЕТА (ОБНОВЛЕННЫЙ)
     // ============================================
 
     app.post('/api/save-answer', requireAuth, async (req, res) => {
-        const { nprn, choiceNrn, isValid, answerText } = req.body;
+        const { questionNrn, choiceType, choices } = req.body;
 
-        if (!nprn) {
+        if (!questionNrn) {
             return res.status(400).json({ success: false, error: 'Не указан номер вопроса' });
         }
 
         try {
             const connection = await getConnectionForSession(req, connectionManager);
 
-            // Вызываем процедуру сохранения ответа
-            // Предполагаемая сигнатура: P_UD_QUESTSC_ANS(
-            //   pNPRN IN NUMBER,        -- номер вопроса (V_UD_QUESTSQ.NRN)
-            //   pNRN IN NUMBER,         -- номер варианта (V_UD_QUESTSQC.NRN) для выбора
-            //   pNVALID IN NUMBER,      -- признак отмеченности (1/0) для выбора
-            //   pSTEXT IN VARCHAR2      -- текст ответа для свободного ввода
-            // )
-            await connection.execute(
-                `BEGIN
-                    ${SCHEMA}.P_UD_QUESTSC_ANS(
-                        :1,
-                        :2,
-                        :3,
-                        :4
-                    );
-                END;`,
-                [
-                    nprn,
-                    choiceNrn || null,
-                    isValid !== undefined && isValid !== null ? (isValid ? 1 : 0) : null,
-                    answerText || null
-                ]
-            );
+            // В зависимости от типа вопроса обрабатываем по-разному
+            if (choiceType === 0) {
+                // Свободный ввод: сохраняем только текст
+                const answerText = choices?.[0]?.text || '';
+                await connection.execute(
+                    `BEGIN
+                        ${SCHEMA}.P_UD_QUESTSC_ANS(
+                            :1,
+                            :2,
+                            :3,
+                            :4
+                        );
+                    END;`,
+                    [
+                        questionNrn,
+                        null,           // NRN варианта
+                        null,           // NVALID
+                        answerText      // STEXT
+                    ]
+                );
+                console.log(`✅ Текстовый ответ сохранен для вопроса ${questionNrn}`);
+                
+            } else if (choiceType === 1 || choiceType === 2) {
+                // Одиночный или множественный выбор: сохраняем ВСЕ варианты с их состояниями
+                if (!choices || choices.length === 0) {
+                    return res.status(400).json({ success: false, error: 'Не переданы варианты ответов' });
+                }
 
-            console.log(`✅ Ответ сохранен: вопрос ${nprn}, вариант  ${choiceNrn || null}`);
+                // Для каждого варианта вызываем процедуру
+                for (const choice of choices) {
+                    await connection.execute(
+                        `BEGIN
+                            ${SCHEMA}.P_UD_QUESTSC_ANS(
+                                :1,
+                                :2,
+                                :3,
+                                :4
+                            );
+                        END;`,
+                        [
+                            questionNrn,
+                            choice.nrn,           // NRN варианта
+                            choice.isValid ? 1 : 0, // NVALID (1 или 0)
+                            null                  // STEXT (не используется)
+                        ]
+                    );
+                }
+                const typeLabel = choiceType === 1 ? 'Одиночный выбор' : 'Множественный выбор';
+                console.log(`✅ ${typeLabel} сохранен для вопроса ${questionNrn} (${choices.length} вариантов)`);
+                
+            } else {
+                return res.status(400).json({ success: false, error: 'Неизвестный тип вопроса' });
+            }
+
             res.json({ success: true });
 
         } catch (err) {
