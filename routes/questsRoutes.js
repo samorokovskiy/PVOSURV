@@ -212,7 +212,7 @@ module.exports = function(app) {
                 ]
             );
 
-            console.log(`✅ Ответ сохранен: вопрос ${nprn}`);
+            console.log(`✅ Ответ сохранен: вопрос ${nprn}, вариант  ${choiceNrn || null}`);
             res.json({ success: true });
 
         } catch (err) {
